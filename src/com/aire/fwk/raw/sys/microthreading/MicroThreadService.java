@@ -12,7 +12,7 @@ import com.aire.fwk.raw.sys.microthreading.interfaces.MicroThread;
  * 
  * The service can be set up to use a thread pool of a set size, or a single thread. The service
  * will then run every attached micro-thread in the order they were added, repeatedly. When
- * a micro-thread returns false on its 'isFinished' method, the thread will be removed.<br><br>
+ * a micro-thread returns true on its 'isFinished' method, the thread will be removed.<br><br>
  * 
  * Conceptually, the idea is to allow a simpler version of threading that can split a load of multiple
  * objects that require use of a thread over a single thread, to enable better load balancing.<br><br>
@@ -76,16 +76,18 @@ public class MicroThreadService
 				long opTime = (this.poolQueue.get(0).runTime + 
 						((this.poolQueue.get(0).runTime * this.poolQueue.get(0).addThread.size()) / 
 								(this.poolQueue.get(0).threadList.size() + 1)));
+				MicroWorkerThread curThread;
 				MicroWorkerThread t = this.poolQueue.get(0);
 				for (int i = 1; i < this.poolQueue.size(); i++)
 				{
-					long runTime = this.poolQueue.get(i).runTime;
-					if (opTime > (runTime + ((runTime * this.poolQueue.get(i).addThread.size()) / 
-							(this.poolQueue.get(i).threadList.size() + 1))))
+					curThread = this.poolQueue.get(i);
+					long runTime = curThread.runTime;
+					if (opTime > (runTime + ((runTime * curThread.addThread.size()) / 
+							(curThread.threadList.size() + 1))))
 					{
-						t = this.poolQueue.get(i);
-						opTime = (runTime + ((runTime * this.poolQueue.get(i).addThread.size()) /
-								(this.poolQueue.get(i).threadList.size() + 1)));
+						t = curThread;
+						opTime = (runTime + ((runTime * curThread.addThread.size()) /
+								(curThread.threadList.size() + 1)));
 					}
 				}
 				t.addThread(thread);
@@ -93,12 +95,15 @@ public class MicroThreadService
 			else
 			{
 				MicroWorkerThread t = this.poolQueue.get(0);
+				MicroWorkerThread curThread;
 				for (int i = 1; i < this.poolQueue.size(); i++)
 				{
+					curThread = this.poolQueue.get(i);
+					MicroWorkerThread curThread
 					if ((t.threadList.size() + t.addThread.size()) > 
-						(this.poolQueue.get(i).threadList.size() + this.poolQueue.get(i).addThread.size()))
+						(curThread.threadList.size() + curThread.addThread.size()))
 					{
-						t = this.poolQueue.get(i);
+						t = curThread;
 					}
 				}
 				t.addThread(thread);
